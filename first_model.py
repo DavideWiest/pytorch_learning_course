@@ -3,6 +3,7 @@ from torch import nn
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 
 weight = 0.7
@@ -131,9 +132,20 @@ for epoch in range(epochs):
             test_loss_values.append(test_loss)
             train_loss_values.append(train_loss)
 
-plt.plot(epoch_count, train_loss_values, label= "train loss")
-plt.plot(epoch_count, test_loss_values, label="test loss")
-plt.show()
+# plt.plot(epoch_count, train_loss_values, label= "train loss")
+# plt.plot(epoch_count, test_loss_values, label="test loss")
+# plt.show()
+
 
 # after 360 epochs:
 # OrderedDict([('weights', tensor([0.6990])), ('bias', tensor([0.3093]))])
+
+
+
+model_path = Path("models")
+model_name = "model.pth"
+model_path_final = model_path / model_name
+
+torch.save(model_0.state_dict(), model_path_final)
+
+
