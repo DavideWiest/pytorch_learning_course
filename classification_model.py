@@ -24,6 +24,7 @@ y = torch.from_numpy(y).type(torch.float)
 
 x_train, y_train, x_test, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
+
 class circleModel(nn.Module):
     def __init__(self):
         super().__init__()
@@ -34,15 +35,15 @@ class circleModel(nn.Module):
     def forward(self, x):
         return self.layer2(self.layer1(x)) # x -> layer1 -> layer2
 
-cm = circleModel().to(device)
+cm1 = circleModel().to(device)
 
 # alternative model initialization
-# cm = nn.Sequential(
-#     nn.Linear(in_features=2, out_features=5),
-#     nn.Linear(in_features=5, out_features=1)
-# ).to(device)
+cm = nn.Sequential(
+    nn.Linear(in_features=2, out_features=5),
+    nn.Linear(in_features=5, out_features=1)
+).to(device)
 
 with torch.inference_mode():
-    untrained_preds = cm(x_test.to(device))
-
+    untrained_preds = cm(x_train.to(device))
+    # print(untrained_preds)
 
