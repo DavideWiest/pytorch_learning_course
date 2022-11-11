@@ -118,6 +118,7 @@ def skip():
 
     # tensor on gpu cannot be converted to numpy array
 
+    print(torch.randn(20))
 
 
 
