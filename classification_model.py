@@ -7,6 +7,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
 sample_num = 1000
 
 x, y = make_circles(sample_num, noise=0.03, random_state=42)
@@ -22,8 +24,25 @@ y = torch.from_numpy(y).type(torch.float)
 
 x_train, y_train, x_test, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
+class circleModel(nn.Module):
+    def __init__(self):
+        super().__init__()
 
+        self.layer1 = nn.Linear(in_features=2, out_features=5)
+        self.layer2 = nn.Linear(in_features=5, out_features=1)
 
+    def forward(self, x):
+        return self.layer2(self.layer1(x)) # x -> layer1 -> layer2
 
+cm = circleModel().to(device)
+
+# alternative model initialization
+# cm = nn.Sequential(
+#     nn.Linear(in_features=2, out_features=5),
+#     nn.Linear(in_features=5, out_features=1)
+# ).to(device)
+
+with torch.inference_mode():
+    untrained_preds = cm(x_test.to(device))
 
 
