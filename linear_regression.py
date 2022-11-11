@@ -36,7 +36,7 @@ def plot_pred(train_data, train_labels, test_data, test_labels, predictions=None
 
     plt.show()
 
-def plot_pred2(train_data, train_labels, test_data, test_labels, predictions=None):
+def plot_pred_full(train_data, train_labels, test_data, test_labels, predictions=None, predictions2=None):
     train_data, train_labels = train_data.type(torch.float32), train_labels.type(torch.float32)
 
     plt.figure(figsize=(train_data.max() * 4, train_labels.max() * 4))
@@ -46,7 +46,9 @@ def plot_pred2(train_data, train_labels, test_data, test_labels, predictions=Non
     plt.scatter(test_data, test_labels, c="g", s=4, label="Testing data")
 
     if predictions != None:
-        plt.scatter(train_data, predictions, c="r", s=4, label="Predictions")
+        plt.scatter(test_data, predictions, c="r", s=4, label="Predictions")
+    if predictions2 != None:
+        plt.scatter(train_data, predictions2, c="r", s=4, label="Predictions 2")
 
     plt.show()
 
@@ -87,7 +89,11 @@ loss_fn = nn.L1Loss()
 # lr = learning rate
 optimizer = torch.optim.SGD(params=model_0.parameters(), lr=0.01)
 
-epochs = 360
+epochs = 200
+epoch_count = []
+loss_values = []
+test_loss_values = []
+train_loss_values = []
 
 for epoch in range(epochs):
     model_0.train()
@@ -105,22 +111,29 @@ for epoch in range(epochs):
 
     model_0.eval()
 
-    with torch.inference_mode():
-        y_preds_new = model_0(x_test)
-        test_loss = loss_fn(y_preds_new, y_test)
-        print(f"Epoch {epoch} loss {loss} test loss {test_loss}")
 
     print(model_0.state_dict())
 
     if epoch % 20 == 0:
+        # inference mode for performance
         with torch.inference_mode():
+            y_preds_new3 = model_0(x_train)
+            train_loss = loss_fn(y_preds_new3, y_train)
             y_preds_new = model_0(x_test)
-            plot_pred(x_train, y_train, x_test, y_test, predictions=y_preds_new)
-            y_preds_new = model_0(x_train)
-            plot_pred2(x_train, y_train, x_test, y_test, predictions=y_preds_new)
+            test_loss = loss_fn(y_preds_new, y_test)
+            print(f"Epoch {epoch} loss {loss} test loss {test_loss}")
 
+            y_preds_new2 = model_0(x_train)
+            # plot_pred_full(x_train, y_train, x_test, y_test, predictions=y_preds_new, predictions2=y_preds_new2)
+            
+            epoch_count.append(epoch)
+            loss_values.append(loss)
+            test_loss_values.append(test_loss)
+            train_loss_values.append(train_loss)
 
-
+plt.plot(epoch_count, train_loss_values, label= "train loss")
+plt.plot(epoch_count, test_loss_values, label="test loss")
+plt.show()
 
 # after 360 epochs:
 # OrderedDict([('weights', tensor([0.6990])), ('bias', tensor([0.3093]))])
