@@ -120,5 +120,6 @@ def skip():
 
     print(torch.randn(20))
 
-
+    # make all negative numbers positive
+    torch.relu(tensor)
 
