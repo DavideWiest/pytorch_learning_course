@@ -95,8 +95,8 @@ for epoch in range(epochs):
     loss = loss_fn(y_logits, y_train)
     acc = accuracy_fn(y_train, y_pred)
 
-    print(f"loss: {loss:.3f}")
-    print(f"acc: {acc:.3f}")
+    # print(f"loss: {loss:.3f}")
+    # print(f"acc: {acc:.3f}")
 
     optimizer.zero_grad()
 
@@ -106,7 +106,38 @@ for epoch in range(epochs):
 
     cm.eval()
 
+    with torch.inference_mode():
+        test_logits = cm(x_test).squeeze()
+        test_pred = torch.round(torch.sigmoid(test_logits))
 
+        test_loss = loss_fn(test_logits, y_test)
+        test_acc = accuracy_fn(y_test, test_pred)
+
+    if epoch % 10 == 0:
+        print(f"epoch {epoch} loss {loss:.3f} acc {acc:.3f} test loss {test_loss:.3f} test acc {test_acc:.3f}")
+
+
+# import requests
+# from pathlib import Path 
+
+# # Download helper functions from Learn PyTorch repo (if not already downloaded)
+# if Path("helper_functions.py").is_file():
+#   print("helper_functions.py already exists, skipping download")
+# else:
+#   print("Downloading helper_functions.py")
+#   request = requests.get("https://raw.githubusercontent.com/mrdbourke/pytorch-deep-learning/main/helper_functions.py")
+#   with open("helper_functions.py", "wb") as f:
+#     f.write(request.content)
+
+from bourke_helper_functions import plot_predictions, plot_decision_boundary
+
+plt.figure(figsize=(12, 6))
+plt.subplot(1, 2, 1)
+plt.title("Train")
+plot_decision_boundary(cm, x_train, y_train)
+plt.subplot(1, 2, 2)
+plt.title("Test")
+plot_decision_boundary(cm, x_test, y_test)
 
 
 # output of model are raw logits
