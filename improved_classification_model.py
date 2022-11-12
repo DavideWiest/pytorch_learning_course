@@ -33,19 +33,21 @@ class circleModel(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.layer1 = nn.Linear(in_features=2, out_features=5)
-        self.layer2 = nn.Linear(in_features=5, out_features=1)
+        self.layer1 = nn.Linear(in_features=2, out_features=10)
+        self.layer2 = nn.Linear(in_features=10, out_features=10)
+        self.layer3 = nn.Linear(in_features=10, out_features=1)
+        self.relu = nn.ReLU()
 
     def forward(self, x):
-        return self.layer2(self.layer1(x)) # x -> layer1 -> layer2
+        return self.layer3(self.relu(self.layer2(self.relu(self.layer1(x))))) # x -> layer1 -> layer2 -> layer3
 
-cm1 = circleModel().to(device)
+cm = circleModel().to(device)
 
 # alternative model initialization
-cm = nn.Sequential(
-    nn.Linear(in_features=2, out_features=5),
-    nn.Linear(in_features=5, out_features=1)
-).to(device)
+# cm1 = nn.Sequential(
+#     nn.Linear(in_features=2, out_features=5),
+#     nn.Linear(in_features=5, out_features=1)
+# ).to(device)
 
 # with torch.inference_mode():
 #     untrained_preds = cm(x_train.to(device))
@@ -56,7 +58,7 @@ loss_fn = nn.BCEWithLogitsLoss() # sigmoid activation function built in
 # bce with logits -> pass in logits
 # bce -> convert logits to probabilities and pass in probabilities
 
-optimizer = torch.optim.SGD(params=cm.parameters(), lr=0.1)
+optimizer = torch.optim.SGD(params=cm.parameters(), lr=0.4)
 
 def accuracy_fn(y_true, y_pred):
     correct = torch.eq(y_true, y_pred).sum().item()
@@ -83,8 +85,10 @@ def test_model():
 # prbablities to labels (via torch.round)
 
 
+epochs = 1000
 
-epochs = 100
+torch.manual_seed(42)
+torch.cuda.manual_seed(42)
 
 for epoch in range(epochs):
     cm.train()
@@ -113,7 +117,7 @@ for epoch in range(epochs):
         test_loss = loss_fn(test_logits, y_test)
         test_acc = accuracy_fn(y_test, test_pred)
 
-    if epoch % 10 == 0:
+    if epoch % 100 == 0:
         print(f"epoch {epoch} loss {loss:.3f} acc {acc:.3f} test loss {test_loss:.3f} test acc {test_acc:.3f}")
 
 
@@ -140,9 +144,6 @@ plt.title("Test")
 plot_decision_boundary(cm, x_test, y_test)
 
 plt.show()
-
-
-
 
 # output of model are raw logits
 # need to be passed into activation function (sigmoid for binary corssentropy, softmax for multiclass classification)
