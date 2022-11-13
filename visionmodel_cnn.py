@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from timeit import default_timer as timer
 from tqdm.auto import tqdm
+import sys
 
 import torchvision
 from torchvision import datasets
@@ -16,6 +17,7 @@ from torch.utils.data import DataLoader
 
 BATCH_SIZE = 32
 EPOCHS = 3
+CONV_BLOCK2_OUTPUT_SHAPE = 7
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -85,19 +87,35 @@ class visionModel(nn.Module):
     def __init__(self, input_shape, hidden_units, output_shape):
         super().__init__()
 
-        self.cnn_layers = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(in_features=input_shape, out_features=hidden_units),
+        self.conv_block1 = nn.Sequential(
+            nn.Conv2d(in_channels=input_shape, out_channels=hidden_units, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.Linear(in_features=hidden_units, out_features=output_shape),
-            nn.ReLU()
+            nn.Conv2d(in_channels=hidden_units, out_channels=hidden_units, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2)
+        )
+        self.conv_block2 = nn.Sequential(
+            nn.Conv2d(in_channels=hidden_units, out_channels=hidden_units, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=hidden_units, out_channels=hidden_units, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2)
+        )
+        print(hidden_units*CONV_BLOCK2_OUTPUT_SHAPE*CONV_BLOCK2_OUTPUT_SHAPE)
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(in_features=CONV_BLOCK2_OUTPUT_SHAPE*CONV_BLOCK2_OUTPUT_SHAPE, out_features=output_shape)
         )
 
+
     def forward(self, x):
-        return self.cnn_layers(x.to(device))
+        x = self.conv_block1(x.to(device))
+        x = self.conv_block2(x)
+        x = self.classifier(x)
+        return x
 
 model = visionModel(
-    28 * 28,
+    1,
     10,
     len(class_names)
 ).to(device)
@@ -109,20 +127,38 @@ def print_train_time(start, end, device: torch.device = None):
     total_time = end - start
     print(f"Time elapsed on {device}: {total_time:.3f}")
 
-start_time = timer()
-
-end_time = timer()
-
-print_train_time(start_time, end_time, device)
-
-train_time_start = timer()
-
-
-
 
 
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
+
+
+images = torch.randn(size=(32, 3, 64, 64))
+test_image = images[0]
+
+# print(test_image.shape)
+
+conv_layer = nn.Conv2d(in_channels=3, out_channels=10, kernel_size=(3,3), stride=1, padding=0)
+max_pool_layer = nn.MaxPool2d(kernel_size=2)
+
+# conv_output = conv_layer(test_image)
+# print(conv_output.shape)
+# maxpool_output = max_pool_layer(conv_output)
+# print(maxpool_output.shape)
+
+test_image2 = torch.randn(size=[1, 28, 28])
+
+test_image2 = model.conv_block1(test_image2.to(device))
+print(test_image2.shape)
+test_image2 = model.conv_block2(test_image2)
+print(test_image2.shape)
+test_image2 = model.classifier(test_image2)
+print(test_image2.shape)
+
+
+sys.exit(0)
+
+train_time_start = timer()
 
 def train_step(model: nn.Module, dataloader: torch.utils.data.DataLoader, loss_fn: nn.Module, optimizer: torch.optim.Optimizer, accuracy_fn, device: torch.device = device):
     model.train()
