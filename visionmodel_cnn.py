@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from timeit import default_timer as timer
 from tqdm.auto import tqdm
 import sys
+import random
 
 import torchvision
 from torchvision import datasets
@@ -101,10 +102,9 @@ class visionModel(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2)
         )
-        print(hidden_units*CONV_BLOCK2_OUTPUT_SHAPE*CONV_BLOCK2_OUTPUT_SHAPE)
         self.classifier = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(in_features=CONV_BLOCK2_OUTPUT_SHAPE*CONV_BLOCK2_OUTPUT_SHAPE, out_features=output_shape)
+            nn.Linear(in_features=hidden_units*CONV_BLOCK2_OUTPUT_SHAPE*CONV_BLOCK2_OUTPUT_SHAPE, out_features=output_shape)
         )
 
 
@@ -123,15 +123,15 @@ model = visionModel(
 loss_fn = nn.CrossEntropyLoss().to(device)
 optimizer = torch.optim.SGD(params=model.parameters(), lr=0.1)
 
+
+
+
 def print_train_time(start, end, device: torch.device = None):
     total_time = end - start
     print(f"Time elapsed on {device}: {total_time:.3f}")
 
-
-
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
-
 
 images = torch.randn(size=(32, 3, 64, 64))
 test_image = images[0]
@@ -146,17 +146,17 @@ max_pool_layer = nn.MaxPool2d(kernel_size=2)
 # maxpool_output = max_pool_layer(conv_output)
 # print(maxpool_output.shape)
 
-test_image2 = torch.randn(size=[1, 28, 28])
+def test_model():
+    test_image2 = torch.randn(size=[1, 28, 28]).unsqueeze(1).to(device)
 
-test_image2 = model.conv_block1(test_image2.to(device))
-print(test_image2.shape)
-test_image2 = model.conv_block2(test_image2)
-print(test_image2.shape)
-test_image2 = model.classifier(test_image2)
-print(test_image2.shape)
+    test_image2 = model.conv_block1(test_image2)
+    print(test_image2.shape)
+    test_image2 = model.conv_block2(test_image2)
+    print(test_image2.shape)
+    test_image2 = model.classifier(test_image2)
+    print(test_image2.shape)
 
 
-sys.exit(0)
 
 train_time_start = timer()
 
@@ -184,7 +184,7 @@ def train_step(model: nn.Module, dataloader: torch.utils.data.DataLoader, loss_f
     train_loss /= len(dataloader)
     train_acc /= len(dataloader)
     
-    print(f"Looked at {batch * len(x)}/{len(dataloader.dataset)} loss {train_loss:.3f} acc {train_acc:.3f}")
+    print(f"\nLooked at {batch * len(x)}/{len(dataloader.dataset)} loss {train_loss:.3f} acc {train_acc:.3f}")
 
 
 def test_step(model: nn.Module, dataloader: torch.utils.data.DataLoader, loss_fn: nn.Module, optimizer: torch.optim.Optimizer, accuracy_fn, device: torch.device = device):
@@ -253,3 +253,39 @@ def eval_model(model: torch.nn.Module, data_loader: torch.utils.data.DataLoader,
 
 model_results = eval_model(model, test_dataloader, loss_fn, accuracy_fn)
 print(model_results)
+
+def make_predictions(model: torch.nn.Module, data: list, device: torch.device = device):
+    pred_probs = []
+
+    model.to(device)
+    model.eval()
+    with torch.inference_mode():
+        for sample in tqdm(data):
+            sample = torch.unsqueeze(sample, dim=0).to(device)
+
+            pred_logit = model(sample)
+            pred_prob = torch.softmax(pred_logit.squeeze(), dim=0)
+
+            pred_probs.append(pred_prob.cpu())
+
+    return torch.stack(pred_probs)
+
+
+test_samples = []
+test_labels = []
+
+for sample, label in random.sample(list(test_data), k=9):
+    test_samples.append(sample)
+    test_labels.append(label)
+
+test_samples[0].shape
+
+def show_first_sample():
+    plt.imshow(test_samples[0].squeeze(), cmap="gray")
+    plt.title(class_names[test_labels[0]])
+    plt.show()
+
+pred_probs = make_predictions(model, test_samples, device)
+
+
+
