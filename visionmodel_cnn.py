@@ -7,6 +7,10 @@ from timeit import default_timer as timer
 from tqdm.auto import tqdm
 import sys
 import random
+import torchmetrics
+import mlxtend
+from torchmetrics import ConfusionMatrix
+from mlxtend.plotting import plot_confusion_matrix
 
 import torchvision
 from torchvision import datasets
@@ -288,20 +292,47 @@ def show_first_sample():
 pred_probs = make_predictions(model, test_samples, device)
 pred_classes = pred_probs.argmax(dim=1)
 
-plt.figure(figsize=(9,9))
-nrows = 3
-ncols = 3
-for i, sample in enumerate(test_samples):
-    plt.subplot(nrows, ncols, i+1)
-    plt.imshow(sample.squeeze(), cmap="gray")
-    pred_label = class_names[pred_classes[i]]
-    truth_label = class_names[test_labels[i]]
-    if pred_label == truth_label:
-        plt.title(f"{pred_label} [{truth_label}]", fontsize=10, c="g")
-    else:
-        plt.title(f"{pred_label} [{truth_label}]", fontsize=10, c="r")
+def plot_sample_preds():
+    plt.figure(figsize=(9,9))
+    nrows = 3
+    ncols = 3
+    for i, sample in enumerate(test_samples):
+        plt.subplot(nrows, ncols, i+1)
+        plt.imshow(sample.squeeze(), cmap="gray")
+        pred_label = class_names[pred_classes[i]]
+        truth_label = class_names[test_labels[i]]
+        if pred_label == truth_label:
+            plt.title(f"{pred_label} [{truth_label}]", fontsize=10, c="g")
+        else:
+            plt.title(f"{pred_label} [{truth_label}]", fontsize=10, c="r")
 
-plt.axis(False)
-plt.show()
+    plt.axis(False)
+    plt.show()
+
+y_preds = []
+model.eval()
+with torch.inference_mode():
+    for x, y in tqdm(test_dataloader, desc="making predictions"):
+        x, y = x.to(device), y.to(device)
+
+        y_logit = model(x)
+        y_pred = torch.softmax(y_logit.squeeze(), dim=0).argmax(dim=1)
+        y_preds.append(y_pred.cpu())
+
+print(y_preds)
+y_pred_tensor = torch.cat(y_preds)
+y_pred_tensor[:10]
+
+def show_conf_matrix():
+    confmat = ConfusionMatrix(num_classes=len(class_names))
+    confmat_tensor = confmat(preds=y_pred_tensor, target=test_data.targets)
+
+    fig, ax = plot_confusion_matrix(conf_mat=confmat_tensor.numpy(), class_names=class_names, figsize=(10,7))
+    fig.show()
+    plt.show()
+
+
+
+
 
 
