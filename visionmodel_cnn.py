@@ -286,6 +286,22 @@ def show_first_sample():
     plt.show()
 
 pred_probs = make_predictions(model, test_samples, device)
+pred_classes = pred_probs.argmax(dim=1)
 
+plt.figure(figsize=(9,9))
+nrows = 3
+ncols = 3
+for i, sample in enumerate(test_samples):
+    plt.subplot(nrows, ncols, i+1)
+    plt.imshow(sample.squeeze(), cmap="gray")
+    pred_label = class_names[pred_classes[i]]
+    truth_label = class_names[test_labels[i]]
+    if pred_label == truth_label:
+        plt.title(f"{pred_label} [{truth_label}]", fontsize=10, c="g")
+    else:
+        plt.title(f"{pred_label} [{truth_label}]", fontsize=10, c="r")
+
+plt.axis(False)
+plt.show()
 
 
