@@ -26,9 +26,9 @@ model_0.load_state_dict(torch.load(model_path_final))
 print(model_0.state_dict())
 
 
-
-
-
+# use torch.isclose(tensor of model 1 loss, tensor of model 2 loss, atol=...) to check if model saved correctly
+# atol = absolute tolerance = at least 1e-02
+1e-20
 
 
 
