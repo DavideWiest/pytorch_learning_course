@@ -5,20 +5,59 @@ import numpy as np
 import matplotlib.pyplot as plt
 from timeit import default_timer as timer
 from tqdm.auto import tqdm
+import os, sys
+from pathlib import Path
 
 import torchvision
 from torchvision import datasets
 from torchvision import transforms
 from torchvision.transforms import ToTensor
-from torch.utils.data import DataLoader
-
-
+from torch.utils.data import DataLoader, Dataset
+from typing import Tuple, Dict, List
 
 BATCH_SIZE = 32
 EPOCHS = 3
 CONV_BLOCK2_OUTPUT_SHAPE = 7
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+img_train = Path("C:/Users/DavWi/OneDrive/Desktop/storage/ml_datasets/foods/train")
+img_test = Path("C:/Users/DavWi/OneDrive/Desktop/storage/ml_datasets/foods/test")
+
+img_train_list = list(img_train.glob("*/*.jpg"))
+img_test_list = list(img_test.glob("*/*.jpg"))
+
+data_transform = transforms.Compose([
+    transforms.Resize(size=(64, 64)),
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.ToTensor()
+])
+
+train_data = datasets.ImageFolder(root=img_train, transform=data_transform, target_transform=None)
+test_data = datasets.ImageFolder(root=img_test, transform=data_transform, target_transform=None)
+
+print(train_data.class_to_idx)
+print(train_data.classes)
+
+train_dataloader = DataLoader(dataset=train_data, batch_size=BATCH_SIZE, num_workers=os.cpu_count(), shuffle=True)
+
+test_dataloader = DataLoader(dataset=test_data, batch_size=BATCH_SIZE, num_workers=os.cpu_count(), shuffle=True)
+
+img, label = next(iter(train_data))
+
+def custom_dataset():
+    class_names_found = sorted([entry.name for entry in list(os.scandir(img_train))])
+
+    if not class_names_found:
+        raise FileNotFoundError("Couldnt find any classes")
+
+    class_idx = {i: c for i, c in enumerate(class_names_found)}
+    print(class_idx)
+    return class_idx
+
+custom_dataset()
+
+sys.exit(0)
 
 train_data = datasets.FashionMNIST(
     root="data", 
