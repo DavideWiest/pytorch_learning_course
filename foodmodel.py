@@ -15,6 +15,8 @@ from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader, Dataset
 from typing import Tuple, Dict, List
 
+from PIL import Image
+
 BATCH_SIZE = 32
 EPOCHS = 3
 CONV_BLOCK2_OUTPUT_SHAPE = 7
@@ -40,12 +42,11 @@ print(train_data.class_to_idx)
 print(train_data.classes)
 
 train_dataloader = DataLoader(dataset=train_data, batch_size=BATCH_SIZE, num_workers=os.cpu_count(), shuffle=True)
-
 test_dataloader = DataLoader(dataset=test_data, batch_size=BATCH_SIZE, num_workers=os.cpu_count(), shuffle=True)
 
 img, label = next(iter(train_data))
 
-def custom_dataset(directory: str):
+def find_classes(directory: str):
     class_names_found = sorted([entry.name for entry in list(os.scandir(directory)) if entry.is_dir()])
 
     if not class_names_found:
@@ -53,9 +54,40 @@ def custom_dataset(directory: str):
 
     class_idx = {i: c for i, c in enumerate(class_names_found)}
     print(class_idx)
-    return class_idx
+    return class_names_found, class_idx
 
-custom_dataset(img_train)
+find_classes(img_train)
+
+
+class ImageFolderCustom(Dataset):
+    def __init__(self, target_dir: str, transform=None):
+        self.paths = list(Path(target_dir.glob("*/*.jpg")))
+
+        self.transform = transform
+        self.classes, self.class_to_idx = find_classes(target_dir)
+
+    def load_image(self, index: int) -> Image.Image:
+        image_path = self.paths[index]
+        return Image.open(image_path)
+
+    def __len__(self) -> int:
+        return len(self.paths)
+
+    def __getitem__(self, index:int) -> Tuple[torch.Tensor, int]:
+        img = self.load_image(index)
+        class_name = self.paths[index].parent.name
+        class_idx = self.class_to_idx[class_name]
+
+        if self.transform:
+            return self.transform(img), class_idx
+        else:
+            return img, class_idx
+
+
+
+
+
+
 
 sys.exit(0)
 
