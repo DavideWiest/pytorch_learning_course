@@ -24,7 +24,7 @@ from PIL import Image
 def main():
     BATCH_SIZE = 32
     NUM_WORKERS = os.cpu_count()
-    EPOCHS = 3
+    EPOCHS = 10
     CONV_BLOCK2_OUTPUT_SHAPE = 13 # look at shape of label batch 
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -212,11 +212,9 @@ def main():
         train_loss /= len(dataloader)
         train_acc /= len(dataloader)
         
-        print(f"\n\nLooked at {batch * len(x)}/{len(dataloader.dataset)} loss {train_loss:.3f} acc {train_acc:.3f}")
-
         return train_loss, train_acc
 
-    def test_step(model: nn.Module, dataloader: torch.utils.data.DataLoader, loss_fn: nn.Module, optimizer: torch.optim.Optimizer, accuracy_fn, crnt_epoch, device: torch.device = device):
+    def test_step(model: nn.Module, dataloader: torch.utils.data.DataLoader, loss_fn: nn.Module, optimizer: torch.optim.Optimizer, accuracy_fn, device: torch.device = device):
 
         model.eval()
 
@@ -235,8 +233,6 @@ def main():
             test_loss /= len(dataloader)
             test_acc /= len(dataloader)
 
-        # if epoch % 10 == 0:
-        print(f"epoch {crnt_epoch} test loss {test_loss:.3f} test acc {test_acc:.3f}\n")
         return test_loss, test_acc
 
     def train_full_fn(model: nn.Module, train_dataloader: DataLoader, test_dataloader: DataLoader, optimizer: torch.optim.Optimizer, loss_fn: torch.nn.Module, accuracy_fn, epochs: int, device):
@@ -249,13 +245,17 @@ def main():
         
         for epoch in tqdm(range(epochs)):
             train_loss, train_acc = train_step(model, train_dataloader, loss_fn, optimizer, accuracy_fn, device)
-            test_loss, test_acc = test_step(model, test_dataloader, loss_fn, optimizer, accuracy_fn, epoch, device)
-            results["train_loss"].append(train_loss)
-            results["train_acc"].append(train_acc)
-            results["test_loss"].append(test_loss)
-            results["test_acc"].append(test_acc)
+            test_loss, test_acc = test_step(model, test_dataloader, loss_fn, optimizer, accuracy_fn, device)
+            results["train_loss"].append(float(train_loss))
+            results["train_acc"].append(float(train_acc))
+            results["test_loss"].append(float(test_loss))
+            results["test_acc"].append(float(test_acc))
 
-    train_full_fn(model, train_dataloader, test_dataloader, optimizer, loss_fn, accuracy_fn, EPOCHS, device)
+            print(f"\n\nEpoch {epoch} | train loss: {train_loss} | train acc: {train_acc} | test loss: {test_loss} | test acc: {test_acc} \n")
+        
+        return results
+
+    results = train_full_fn(model, train_dataloader, test_dataloader, optimizer, loss_fn, accuracy_fn, EPOCHS, device)
 
 
     train_time_end = timer()
@@ -295,6 +295,28 @@ def main():
     model_results = eval_model(model, test_dataloader, loss_fn, accuracy_fn)
     print(model_results)
 
+    def plot_loss_curves(results):
+        epochs = list(range(EPOCHS))
+
+        plt.figure(figsize=(15, 7))
+        plt.subplot(1,2,1)
+        plt.plot(epochs, results["test_loss"], label="test_loss")
+        plt.plot(epochs, results["train_loss"], label="train_loss")
+        plt.title("Loss")
+        plt.xlabel("Epochs")
+        plt.legend()
+
+        plt.subplot(1,2,2)
+        plt.plot(epochs, results["test_acc"], label="test_acc")
+        plt.plot(epochs, results["train_acc"], label="train_acc")
+        plt.title("Accuracy")
+        plt.xlabel("Epochs")
+        plt.legend()
+
+        plt.show()
+
+
+    plot_loss_curves(results)
 
 if __name__ == "__main__":
     main()
