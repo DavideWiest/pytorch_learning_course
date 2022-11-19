@@ -84,10 +84,20 @@ class ImageFolderCustom(Dataset):
             return img, class_idx
 
 
+train_transform = transforms.Compose([
+    transforms.Resize(size=(64, 64)),
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.ToTensor()
+])
 
+test_transform = transforms.Compose([
+    transforms.Resize(size=(64, 64)),
+    # transforms.RandomHorizontalFlip(p=0.5), # usually only for train_transform
+    transforms.ToTensor()
+])
 
-
-
+custom_train_data = ImageFolderCustom(img_train, train_transform)
+custom_test_data = ImageFolderCustom(img_test, test_transform)
 
 sys.exit(0)
 
