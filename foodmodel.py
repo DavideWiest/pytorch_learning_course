@@ -18,6 +18,7 @@ from typing import Tuple, Dict, List
 from PIL import Image
 
 BATCH_SIZE = 32
+NUM_WORKERS = os.cpu_count()
 EPOCHS = 3
 CONV_BLOCK2_OUTPUT_SHAPE = 7
 
@@ -38,8 +39,8 @@ data_transform = transforms.Compose([
 train_data = datasets.ImageFolder(root=img_train, transform=data_transform, target_transform=None)
 test_data = datasets.ImageFolder(root=img_test, transform=data_transform, target_transform=None)
 
-print(train_data.class_to_idx)
-print(train_data.classes)
+# print(train_data.class_to_idx)
+# print(train_data.classes)
 
 train_dataloader = DataLoader(dataset=train_data, batch_size=BATCH_SIZE, num_workers=os.cpu_count(), shuffle=True)
 test_dataloader = DataLoader(dataset=test_data, batch_size=BATCH_SIZE, num_workers=os.cpu_count(), shuffle=True)
@@ -53,7 +54,7 @@ def find_classes(directory: str):
         raise FileNotFoundError("Couldnt find any classes")
 
     class_idx = {i: c for i, c in enumerate(class_names_found)}
-    print(class_idx)
+    # print(class_idx)
     return class_names_found, class_idx
 
 find_classes(img_train)
@@ -61,7 +62,7 @@ find_classes(img_train)
 
 class ImageFolderCustom(Dataset):
     def __init__(self, target_dir: str, transform=None):
-        self.paths = list(Path(target_dir.glob("*/*.jpg")))
+        self.paths = list(Path(target_dir).glob("*/*.jpg"))
 
         self.transform = transform
         self.classes, self.class_to_idx = find_classes(target_dir)
@@ -98,6 +99,28 @@ test_transform = transforms.Compose([
 
 custom_train_data = ImageFolderCustom(img_train, train_transform)
 custom_test_data = ImageFolderCustom(img_test, test_transform)
+
+# print(custom_train_data.classes)
+# print(custom_test_data.class_to_idx)
+
+custom_train_dataloader = DataLoader(
+    custom_train_data,
+    BATCH_SIZE,
+    shuffle=True,
+    num_workers=NUM_WORKERS
+)
+
+custom_test_dataloader = DataLoader(
+    custom_test_data,
+    BATCH_SIZE,
+    shuffle=False, # usually only for train_dataloader
+    num_workers=NUM_WORKERS
+)
+
+
+
+
+
 
 sys.exit(0)
 
