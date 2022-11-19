@@ -44,6 +44,7 @@ def main():
     train_transform = transforms.Compose([
         transforms.Resize(size=(64, 64)),
         transforms.RandomHorizontalFlip(p=0.5),
+        transforms.TrivialAugmentWide(num_magnitude_bins=31),
         # transforms.TrivialAugmentWide(5),
         transforms.ToTensor()
     ])
@@ -318,5 +319,27 @@ def main():
 
     plot_loss_curves(results)
 
+    def convert_pil_img_modelinput(img_path: str):
+        img_out = torchvision.io.read_image(img_path).type(torch.float32)
+
+        transform = transforms.Compose([
+            transforms.Resize(size=(64, 64)),
+            transforms.ToTensor()
+        ])
+        
+        return img_out
+
+    img_out = convert_pil_img_modelinput("data/download.jpg")
+
+    model.eval()
+    with torch.inference_mode():
+        print(model(img_out))
+
 if __name__ == "__main__":
     main()
+
+# scheduler can be used for learning rate scheduling
+# e.g. ExponentialLR(optimizer, gamma=0.9)
+# for epoch: scheduler.step()
+
+
