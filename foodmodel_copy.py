@@ -21,7 +21,7 @@ def main():
     BATCH_SIZE = 32
     NUM_WORKERS = os.cpu_count()
     EPOCHS = 3
-    CONV_BLOCK2_OUTPUT_SHAPE = 16 # look at shape of label batch 
+    CONV_BLOCK2_OUTPUT_SHAPE = 13 # look at shape of label batch 
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -105,18 +105,18 @@ def main():
             super().__init__()
 
             self.conv_block1 = nn.Sequential(
-                nn.Conv2d(in_channels=input_shape, out_channels=hidden_units, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(in_channels=input_shape, out_channels=hidden_units, kernel_size=3, stride=1, padding=0),
                 nn.ReLU(),
-                nn.Conv2d(in_channels=hidden_units, out_channels=hidden_units, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(in_channels=hidden_units, out_channels=hidden_units, kernel_size=3, stride=1, padding=0),
                 nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2)
+                nn.MaxPool2d(kernel_size=2, stride=2)
             )
             self.conv_block2 = nn.Sequential(
-                nn.Conv2d(in_channels=hidden_units, out_channels=hidden_units, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(in_channels=hidden_units, out_channels=hidden_units, kernel_size=3, stride=1, padding=0),
                 nn.ReLU(),
-                nn.Conv2d(in_channels=hidden_units, out_channels=hidden_units, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(in_channels=hidden_units, out_channels=hidden_units, kernel_size=3, stride=1, padding=0),
                 nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2)
+                nn.MaxPool2d(kernel_size=2, stride=2)
             )
             self.classifier = nn.Sequential(
                 nn.Flatten(),
@@ -133,7 +133,7 @@ def main():
             return self.classifier(self.conv_block2(self.conv_block1(x.to(device))))
 
     model = TinyVGG(
-        1,
+        3, # color channels
         10,
         len(class_names)
     ).to(device)
@@ -144,8 +144,9 @@ def main():
 
 
     image_batch, label_batch = next(iter(train_dataloader))
-
-    model(image_batch.to(device))
+    # image_batch = image_batch.permute
+    pred = model(image_batch.to(device))
+    print(pred.shape)
 
     sys.exit(0)
 
