@@ -319,21 +319,44 @@ def main():
 
     plot_loss_curves(results)
 
-    def convert_pil_img_modelinput(img_path: str):
+    def predict_img(model: nn.Module, img_path: str, class_names, img_transform=None, show=False):
         img_out = torchvision.io.read_image(img_path).type(torch.float32)
 
-        transform = transforms.Compose([
-            transforms.Resize(size=(64, 64)),
-            transforms.ToTensor()
-        ])
+        # pixel color channel values between 0 and 1
+        img_out = img_out / 255
+
+        if img_transform:
+            img_out = img_transform(img_out)
         
-        return img_out
+        img_out = img_out.to(device).unsqueeze(0)
+        
+        model.to(device)
+        model.eval()
+        with torch.inference_mode():
+            pred_logits = model(img_out)
+        
+        pred_probs = torch.softmax(pred_logits, dim=1)
+        max_pred_prob = pred_probs.argmax(dim=1).cpu()
+        max_pred_prob_percent = float(pred_probs.max(dim=1).cpu())
+        pred_label = class_names[max_pred_prob]
 
-    img_out = convert_pil_img_modelinput("data/download.jpg")
+        if show:
+            plt.imshow(img_out.squeeze().permute(1, 2, 0)) # to HWC
+            title = f"Prediction: {pred_label} ({max_pred_prob*100:.2f}% sure)"
+            plt.title(title)
+            plt.axis(False)
+            plt.show()
 
-    model.eval()
-    with torch.inference_mode():
-        print(model(img_out))
+        return pred_label, max_pred_prob_percent
+
+    img_transform = transforms.Compose([
+        transforms.Resize(size=(64, 64)),
+        transforms.ToTensor()
+    ])
+
+    prediction, probability = predict_img(model, "data/download.jpg", class_names, img_transform, show=True)
+    print(f"Prediction: {prediction} ({probability*100:.2f}% sure)")
+
 
 if __name__ == "__main__":
     main()
