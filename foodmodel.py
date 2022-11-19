@@ -45,8 +45,8 @@ test_dataloader = DataLoader(dataset=test_data, batch_size=BATCH_SIZE, num_worke
 
 img, label = next(iter(train_data))
 
-def custom_dataset():
-    class_names_found = sorted([entry.name for entry in list(os.scandir(img_train))])
+def custom_dataset(directory: str):
+    class_names_found = sorted([entry.name for entry in list(os.scandir(directory)) if entry.is_dir()])
 
     if not class_names_found:
         raise FileNotFoundError("Couldnt find any classes")
@@ -55,7 +55,7 @@ def custom_dataset():
     print(class_idx)
     return class_idx
 
-custom_dataset()
+custom_dataset(img_train)
 
 sys.exit(0)
 
